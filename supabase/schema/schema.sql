@@ -37,6 +37,7 @@ returns table (
   similarity float
 )
 language sql stable
+set search_path = public          -- pin search_path (resolves advisor warning)
 as $$
   select
     m.id,
@@ -90,6 +91,16 @@ create table if not exists content_calendars (
   created_at  timestamptz not null default now()
 );
 
--- Note: with auth, replace the 'local' user_id default with auth.uid() and add
--- row-level security policies. This app currently uses the service-role key from
--- server API routes, so RLS is bypassed by design.
+-- ---------------------------------------------------------------------------
+-- Security: enable Row-Level Security on every table.
+--
+-- This app talks to Supabase ONLY from server routes using the service-role key,
+-- which BYPASSES RLS — so the server keeps full access. Enabling RLS with no
+-- permissive policies means the public anon/authenticated roles get NO access,
+-- which is exactly what we want (and clears the "RLS Disabled in Public" advisor
+-- warnings). When you add real auth later, add policies keyed on auth.uid().
+-- ---------------------------------------------------------------------------
+alter table memories            enable row level security;
+alter table brand_profiles      enable row level security;
+alter table generation_history  enable row level security;
+alter table content_calendars   enable row level security;
