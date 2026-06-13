@@ -1,8 +1,11 @@
 import { searchMemories } from "../memory/store";
 import type { MemoryHit } from "../types";
 
-/** Below this cosine similarity, a memory is too unrelated to be useful as a style example. */
-const MIN_SIMILARITY = 0.15;
+/** Below this cosine similarity, a memory is too unrelated to be useful as a style
+ * example. Tuned for gemini-embedding-001, whose similarity scale runs high
+ * (unrelated pairs ~0.45-0.5, clearly-related ~0.7+). Lower this if you switch
+ * to a model with a wider similarity spread. */
+const MIN_SIMILARITY = 0.6;
 
 export interface RagContext {
   hits: MemoryHit[];

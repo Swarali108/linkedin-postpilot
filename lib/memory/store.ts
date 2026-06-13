@@ -14,8 +14,8 @@ import type { MemoryHit, MemoryRecord, MemoryType } from "../types";
  *   • Disk JSON (below) — the zero-setup local fallback. Persists in local dev
  *     but NOT on serverless hosts (ephemeral filesystem).
  *
- * Embeddings are computed locally with all-MiniLM-L6-v2 in both cases. The
- * exported functions dispatch to whichever backend is configured.
+ * Embeddings come from the Gemini API (768-dim) in both cases. The exported
+ * functions dispatch to whichever backend is configured.
  */
 
 const DATA_DIR = path.join(process.cwd(), "data");

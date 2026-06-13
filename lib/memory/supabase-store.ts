@@ -5,9 +5,9 @@ import type { MemoryHit, MemoryRecord, MemoryType } from "../types";
 /**
  * Supabase (pgvector) implementation of the brand-memory store.
  *
- * Embeddings are still computed locally with all-MiniLM-L6-v2; only storage and
- * cosine search move to Postgres. Semantic search uses the `match_memories` RPC
- * defined in supabase/schema/schema.sql.
+ * Embeddings come from the Gemini API (768-dim); storage and cosine search live
+ * in Postgres. Semantic search uses the `match_memories` RPC defined in
+ * supabase/schema/schema.sql.
  *
  * Mirrors the function signatures in ./store.ts so the dispatcher there can pick
  * this implementation when Supabase is configured.

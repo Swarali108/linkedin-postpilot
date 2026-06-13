@@ -20,7 +20,7 @@ visual prompt — in under a minute.
 - **Brand Profile** — save your name, role, industry, audience, and voice. Every post is written *in your voice*. Stored in your browser (no backend required); the store interface is small enough to swap for Supabase later.
 
 **Phase 3/4 — Brand Memory + RAG**
-- **Brand Memory** — paste past posts; they're embedded locally with `all-MiniLM-L6-v2` (transformers.js — no API cost) and stored in a disk-backed vector store.
+- **Brand Memory** — paste past posts; they're embedded with Gemini (`gemini-embedding-001`, 768-dim) and stored in a vector store (Supabase pgvector, or a local disk fallback).
 - **Retrieval-Augmented Generation** — when generating, PostPilot semantically retrieves your most relevant past posts (cosine similarity) and injects them so new posts match your voice. Generated posts can be saved back to memory so the system keeps learning your style.
 
 **Phase 5 — Agentic Workflow**

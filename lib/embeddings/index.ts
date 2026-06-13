@@ -1,49 +1,27 @@
-// Local embeddings using all-MiniLM-L6-v2 via transformers.js.
-// Runs entirely on-device — no API cost, no Gemini quota used.
-// 384-dimensional, mean-pooled, L2-normalized vectors.
+// Embeddings via the Gemini embedding API (text-embedding-004, 768-dim).
+//
+// Originally this used a local all-MiniLM-L6-v2 model (transformers.js), but that
+// pulls in onnxruntime-node (a large native binding) which doesn't fit Vercel's
+// serverless functions. The hosted embedding API keeps the bundle small and
+// deploys cleanly, at a tiny per-call cost.
 
-// transformers.js is ESM-only and heavy; import lazily so it never loads
-// during the build's static analysis or in non-embedding code paths.
-type FeatureExtractor = (
-  text: string,
-  opts: { pooling: "mean"; normalize: boolean }
-) => Promise<{ data: Float32Array }>;
+import { EMBEDDING_DIM, EMBEDDING_MODEL, embedText } from "../ai/gemini";
 
-export const EMBEDDING_MODEL = "Xenova/all-MiniLM-L6-v2";
-export const EMBEDDING_DIM = 384;
+export { EMBEDDING_DIM, EMBEDDING_MODEL };
 
-let extractorPromise: Promise<FeatureExtractor> | null = null;
-
-async function getExtractor(): Promise<FeatureExtractor> {
-  if (!extractorPromise) {
-    extractorPromise = (async () => {
-      const { pipeline } = await import("@xenova/transformers");
-      // Cast: the pipeline's call signature is broader than we use.
-      return (await pipeline(
-        "feature-extraction",
-        EMBEDDING_MODEL
-      )) as unknown as FeatureExtractor;
-    })();
-  }
-  return extractorPromise;
-}
-
-/** Embed a single string into a 384-dim unit vector. */
+/** Embed a single string into a 768-dim vector. */
 export async function embed(text: string): Promise<number[]> {
-  const extractor = await getExtractor();
-  const output = await extractor(text, { pooling: "mean", normalize: true });
-  return Array.from(output.data);
+  return embedText(text);
 }
 
-/** Embed many strings sequentially (the model isn't meaningfully batched here). */
+/** Embed many strings sequentially. */
 export async function embedAll(texts: string[]): Promise<number[][]> {
   const out: number[][] = [];
   for (const t of texts) out.push(await embed(t));
   return out;
 }
 
-/** Cosine similarity of two equal-length vectors. Inputs are already normalized,
- * so this is just the dot product — but we keep it general for safety. */
+/** Cosine similarity of two equal-length vectors (used by the disk fallback). */
 export function cosineSimilarity(a: number[], b: number[]): number {
   let dot = 0;
   let normA = 0;

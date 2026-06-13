@@ -2,7 +2,7 @@
 -- Run this in the Supabase SQL editor (Dashboard → SQL → New query).
 -- Safe to re-run: uses IF NOT EXISTS / CREATE OR REPLACE.
 
--- pgvector for semantic memory (all-MiniLM-L6-v2 = 384 dimensions).
+-- pgvector for semantic memory (Gemini text-embedding-004 = 768 dimensions).
 create extension if not exists vector;
 
 -- ---------------------------------------------------------------------------
@@ -13,7 +13,7 @@ create table if not exists memories (
   user_id     text not null default 'local',
   text        text not null,
   type        text not null default 'past-post',   -- 'past-post' | 'generated'
-  embedding   vector(384) not null,
+  embedding   vector(768) not null,
   created_at  timestamptz not null default now()
 );
 
@@ -25,7 +25,7 @@ create index if not exists memories_embedding_idx
 
 -- Cosine-similarity search, scoped to a user. Returns similarity in [0,1].
 create or replace function match_memories (
-  query_embedding vector(384),
+  query_embedding vector(768),
   match_user_id   text default 'local',
   match_count     int  default 3
 )

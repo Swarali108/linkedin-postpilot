@@ -19,9 +19,13 @@ env vars below are set, it uses Supabase; otherwise it falls back to local disk.
 2. Paste the contents of [`supabase/schema/schema.sql`](supabase/schema/schema.sql) and **Run**.
 
 This enables the `vector` extension and creates the `memories` table (with a
-384-dim embedding column + ivfflat index), the `match_memories` similarity-search
+768-dim embedding column + ivfflat index), the `match_memories` similarity-search
 function, and the `brand_profiles`, `generation_history`, and `content_calendars`
 tables.
+
+> Already ran an earlier (384-dim) version of the schema? Run
+> [`supabase/schema/migrate-384-to-768.sql`](supabase/schema/migrate-384-to-768.sql)
+> once to move the `memories` table to 768 dims.
 
 ## 3. Add credentials
 
@@ -52,8 +56,8 @@ with "write in my voice" on will retrieve via the `match_memories` pgvector RPC.
 
 ## Architecture note
 
-Embeddings are still computed locally with `all-MiniLM-L6-v2` (no API cost) in
-both modes — only storage and similarity search move to Postgres. The store
+Embeddings come from the Gemini API (`gemini-embedding-001`, 768-dim) in both
+modes — only storage and similarity search move to Postgres. The store
 interface (`lib/memory/store.ts`) dispatches between the disk and Supabase
 backends, so nothing else in the app changes.
 

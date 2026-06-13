@@ -12,6 +12,12 @@ if (!apiKey || apiKey === "your_gemini_api_key_here") {
 // flash-lite has a far more generous free-tier daily quota (1,500 vs 20 RPD).
 export const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
 
+// Embedding model. gemini-embedding-001 defaults to 3072-dim; we truncate to 768
+// via outputDimensionality to keep the pgvector column compact.
+export const EMBEDDING_MODEL =
+  process.env.GEMINI_EMBEDDING_MODEL || "gemini-embedding-001";
+export const EMBEDDING_DIM = 768;
+
 let client: GoogleGenAI | null = null;
 
 function getClient(): GoogleGenAI {
@@ -69,6 +75,39 @@ export async function generateText(
   systemInstruction?: string
 ): Promise<string> {
   return callModel(prompt, systemInstruction ? { systemInstruction } : undefined);
+}
+
+/**
+ * Embed text into a vector via the Gemini embedding API (768-dim).
+ * Retries transient errors with backoff, matching callModel.
+ */
+export async function embedText(text: string): Promise<number[]> {
+  const ai = getClient();
+  const maxAttempts = 4;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const response = await ai.models.embedContent({
+        model: EMBEDDING_MODEL,
+        contents: text,
+        config: { outputDimensionality: EMBEDDING_DIM },
+      });
+      const values = response.embeddings?.[0]?.values;
+      if (!values || values.length === 0) {
+        throw new Error("Gemini returned an empty embedding.");
+      }
+      // gemini-embedding-001 truncated below 3072 dims isn't normalized; L2-normalize
+      // so cosine similarity (and pgvector cosine ops) behave correctly.
+      const norm = Math.sqrt(values.reduce((s, v) => s + v * v, 0));
+      return norm > 0 ? values.map((v) => v / norm) : values;
+    } catch (err) {
+      if (attempt < maxAttempts && isTransient(err)) {
+        await sleep(500 * 2 ** (attempt - 1));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error("unreachable");
 }
 
 function parseJSON<T>(raw: string): T {
