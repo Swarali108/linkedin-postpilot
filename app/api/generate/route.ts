@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { addMemory } from "@/lib/memory/store";
 import { runPipeline } from "@/lib/agents/orchestrator";
 import { CONTENT_PIPELINE } from "@/lib/agents/nodes";
+import { describeAiError } from "@/lib/ai/gemini";
 import type { AgentState, AgentStep } from "@/lib/agents/types";
 import type { GenerationInput } from "@/lib/types";
 
@@ -67,9 +68,8 @@ export async function POST(req: NextRequest) {
       trace,
     });
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Generation failed unexpectedly.";
+    const { message, status } = describeAiError(err);
     const trace = (err as Error & { trace?: AgentStep[] }).trace;
-    return NextResponse.json({ error: message, trace }, { status: 500 });
+    return NextResponse.json({ error: message, trace }, { status });
   }
 }

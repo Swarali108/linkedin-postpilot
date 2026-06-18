@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { evaluatePost } from "@/lib/ai/evaluator";
+import { describeAiError } from "@/lib/ai/gemini";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -23,8 +24,7 @@ export async function POST(req: NextRequest) {
     const evaluation = await evaluatePost(body.post);
     return NextResponse.json(evaluation);
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Evaluation failed.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    const { message, status } = describeAiError(err);
+    return NextResponse.json({ error: message }, { status });
   }
 }

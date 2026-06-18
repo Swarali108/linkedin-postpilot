@@ -42,6 +42,32 @@ function isTransient(err: unknown): boolean {
   );
 }
 
+/**
+ * Map a raw AI/SDK error to a clean, user-facing message + HTTP status, so API
+ * routes never leak raw Gemini JSON to the UI.
+ */
+export function describeAiError(err: unknown): { message: string; status: number } {
+  const raw = err instanceof Error ? err.message : String(err);
+  if (/\b503\b|UNAVAILABLE|overloaded|high demand/i.test(raw)) {
+    return {
+      message:
+        "The AI model is busy right now (high demand). Please try again in a few seconds.",
+      status: 503,
+    };
+  }
+  if (/\b429\b|RESOURCE_EXHAUSTED|quota|rate limit/i.test(raw)) {
+    return {
+      message:
+        "Usage limit reached for now. Please wait a moment and try again.",
+      status: 429,
+    };
+  }
+  if (/GEMINI_API_KEY/i.test(raw)) {
+    return { message: raw, status: 500 };
+  }
+  return { message: "Generation failed. Please try again.", status: 500 };
+}
+
 type GenConfig = Parameters<GoogleGenAI["models"]["generateContent"]>[0]["config"];
 
 /** Call the model, retrying transient errors with exponential backoff. */

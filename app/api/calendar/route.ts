@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateCalendar, type CalendarParams } from "@/lib/ai/calendar-generator";
+import { describeAiError } from "@/lib/ai/gemini";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -35,8 +36,7 @@ export async function POST(req: NextRequest) {
     });
     return NextResponse.json(plan);
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Calendar generation failed.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    const { message, status } = describeAiError(err);
+    return NextResponse.json({ error: message }, { status });
   }
 }

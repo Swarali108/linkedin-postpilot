@@ -5,6 +5,7 @@ import {
   deleteMemory,
   listMemories,
 } from "@/lib/memory/store";
+import { describeAiError } from "@/lib/ai/gemini";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -49,10 +50,8 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to add memory." },
-      { status: 500 }
-    );
+    const { message, status } = describeAiError(err);
+    return NextResponse.json({ error: message }, { status });
   }
 }
 

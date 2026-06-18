@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generatePost } from "@/lib/ai/content-generator";
 import { retrieveContext } from "@/lib/rag/retrieve";
+import { describeAiError } from "@/lib/ai/gemini";
 import type { GenerationInput, Hook } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -47,9 +48,7 @@ export async function POST(req: NextRequest) {
     const post = await generatePost(body, body.hook, memoryBlock);
     return NextResponse.json({ body: post });
   } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Rewrite failed." },
-      { status: 500 }
-    );
+    const { message, status } = describeAiError(err);
+    return NextResponse.json({ error: message }, { status });
   }
 }

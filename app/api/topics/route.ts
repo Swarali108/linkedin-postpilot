@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateTopics } from "@/lib/ai/topic-generator";
+import { describeAiError } from "@/lib/ai/gemini";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -27,8 +28,7 @@ export async function POST(req: NextRequest) {
     });
     return NextResponse.json({ topics });
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Topic generation failed.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    const { message, status } = describeAiError(err);
+    return NextResponse.json({ error: message }, { status });
   }
 }
