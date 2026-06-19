@@ -10,8 +10,8 @@ export default function BrandMemoryPage() {
         </Link>
         <h1 className="mt-2 text-2xl font-bold text-gray-900">Brand Memory</h1>
         <p className="text-gray-600">
-          Your writing, remembered. Posts are embedded locally with
-          all-MiniLM-L6-v2 and retrieved semantically when you generate.
+          Your writing, remembered. Posts are embedded with Gemini and retrieved
+          semantically (pgvector) when you generate — so new posts sound like you.
         </p>
       </header>
       <BrandMemory />

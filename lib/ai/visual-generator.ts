@@ -1,38 +1,80 @@
 import { Type } from "@google/genai";
 import { generateJSON } from "./gemini";
-import type { VisualPrompt } from "../types";
+import { brandProfileBlock } from "./personalization";
+import type { BrandProfile, VisualCard } from "../types";
+
+const SYSTEM = `You design the spec for a LinkedIn image card — a clean, modern graphic
+that visually summarizes a post (think a polished "carousel cover" or quote card).
+The card shows REAL TEXT, so distill the post into a punchy title plus either a
+short list of points (each with one fitting emoji) or a single standout quote.
+
+Guidelines:
+- Title: 2-6 words, punchy, title-case. It's the headline of the image.
+- Prefer layout "list" when the post has steps/items/takeaways; use "quote" when
+  one line is the star.
+- For "list": 3-6 points, each a few words (not full sentences), each with ONE
+  relevant emoji icon.
+- Pick an accent hex color that fits the topic's vibe (professional blues/teals
+  for technical, warm tones for story/humor, etc.). Choose theme "dark" usually
+  (LinkedIn graphics pop on dark), "light" only if it clearly fits.`;
 
 const SCHEMA = {
   type: Type.OBJECT,
   properties: {
-    prompt: { type: Type.STRING },
-    style: { type: Type.STRING },
-    dimensions: { type: Type.STRING },
+    title: { type: Type.STRING },
+    subtitle: { type: Type.STRING },
+    layout: { type: Type.STRING, enum: ["list", "quote"] },
+    points: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          icon: { type: Type.STRING },
+          text: { type: Type.STRING },
+        },
+        required: ["icon", "text"],
+      },
+    },
+    quote: { type: Type.STRING },
+    accent: { type: Type.STRING },
+    theme: { type: Type.STRING, enum: ["dark", "light"] },
   },
-  required: ["prompt", "style", "dimensions"],
+  required: ["title", "layout", "accent", "theme"],
 };
 
-const SYSTEM = `You write image-generation prompts for LinkedIn post visuals.
-Visuals should be clean, modern, professional, and not cluttered with text.`;
+function normalizeAccent(accent: string): string {
+  const hex = accent?.trim();
+  return /^#[0-9a-fA-F]{6}$/.test(hex) ? hex : "#0a66c2";
+}
 
-export async function generateVisualPrompt(
+export async function generateVisualCard(
   topic: string,
-  postBody: string
-): Promise<VisualPrompt> {
-  const prompt = `Create an AI image-generation prompt for a LinkedIn visual that
-matches a post about "${topic}".
-
-POST (for context):
+  postBody: string,
+  brandProfile?: BrandProfile
+): Promise<VisualCard> {
+  const prompt = `Design a LinkedIn image card for this post about "${topic}".
+${brandProfileBlock(brandProfile)}
+POST:
 """
-${postBody.slice(0, 1200)}
+${postBody.slice(0, 2000)}
 """
 
-Return a JSON object with exactly these fields:
-- "prompt": a detailed image prompt (1-2 sentences) — dark modern background, minimalist illustration, professional, no embedded text
-- "style": a short style label (e.g. "minimalist tech", "editorial flat illustration")
-- "dimensions": recommended LinkedIn dimensions (e.g. "1200x1200 (square)")
+Return a JSON object with:
+- "title": punchy 2-6 word headline
+- "subtitle": optional one short line (or "")
+- "layout": "list" or "quote"
+- "points": (if list) 3-6 objects { "icon": one emoji, "text": few words }
+- "quote": (if quote) one standout line from the post
+- "accent": a hex color like "#0a66c2" matching the vibe
+- "theme": "dark" or "light"
 
 Return ONLY the JSON object.`;
 
-  return generateJSON<VisualPrompt>(prompt, SYSTEM, SCHEMA);
+  const card = await generateJSON<VisualCard>(prompt, SYSTEM, SCHEMA);
+  return {
+    ...card,
+    accent: normalizeAccent(card.accent),
+    theme: card.theme === "light" ? "light" : "dark",
+    points: card.points?.slice(0, 6),
+  };
 }

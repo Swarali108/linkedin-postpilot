@@ -1,7 +1,7 @@
 import { generateHooks } from "../ai/hook-generator";
 import { generatePost } from "../ai/content-generator";
 import { generateHashtags } from "../ai/hashtag-generator";
-import { generateVisualPrompt } from "../ai/visual-generator";
+import { generateVisualCard } from "../ai/visual-generator";
 import { evaluatePost } from "../ai/evaluator";
 import { retrieveContext } from "../rag/retrieve";
 import type { Agent } from "./types";
@@ -62,10 +62,15 @@ export const visualAgent: Agent = {
   name: "visual",
   async run(s) {
     if (!s.body) throw new Error("no post body for the visual agent");
-    const visual = await generateVisualPrompt(s.input.topic, s.body);
+    const visual = await generateVisualCard(
+      s.input.topic,
+      s.body,
+      s.input.brandProfile
+    );
     return { visual };
   },
-  summarize: (p) => (p.visual ? `created a ${p.visual.style} visual prompt` : "no visual"),
+  summarize: (p) =>
+    p.visual ? `designed a "${p.visual.title}" image card` : "no visual",
 };
 
 /** Agent 5 — Evaluator: score the post on reach dimensions. */

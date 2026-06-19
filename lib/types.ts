@@ -71,10 +71,28 @@ export interface HashtagGroups {
   niche: string[];
 }
 
-export interface VisualPrompt {
-  prompt: string;
-  style: string;
-  dimensions: string;
+/** A point/row in a list-style visual card. */
+export interface VisualCardPoint {
+  /** A single emoji or short symbol shown beside the text. */
+  icon: string;
+  text: string;
+}
+
+/**
+ * A spec for a designed LinkedIn image card. Rendered to a real PNG (crisp text,
+ * on-brand colors) by /api/visual-image — not an AI-generated photo.
+ */
+export interface VisualCard {
+  title: string;
+  subtitle?: string;
+  layout: "list" | "quote";
+  /** For layout="list": 3-7 rows. */
+  points?: VisualCardPoint[];
+  /** For layout="quote": one punchy line pulled from the post. */
+  quote?: string;
+  /** Accent color (hex, e.g. "#0a66c2") — the card's vibe. */
+  accent: string;
+  theme: "dark" | "light";
 }
 
 export interface GeneratedPost {
@@ -82,7 +100,7 @@ export interface GeneratedPost {
   /** The full post body, ready to paste into LinkedIn. */
   body: string;
   hashtags: HashtagGroups;
-  visual: VisualPrompt;
+  visual: VisualCard;
 }
 
 export type ScoreDimension =

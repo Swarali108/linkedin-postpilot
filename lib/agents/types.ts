@@ -5,7 +5,7 @@ import type {
   HashtagGroups,
   MemoryHit,
   PostEvaluation,
-  VisualPrompt,
+  VisualCard,
 } from "../types";
 
 /** The named agents in the content-generation workflow (design doc Phase 5). */
@@ -34,7 +34,7 @@ export interface AgentState {
   selectedHook?: Hook;
   body?: string;
   hashtags?: HashtagGroups;
-  visual?: VisualPrompt;
+  visual?: VisualCard;
   evaluation?: PostEvaluation;
 }
 
