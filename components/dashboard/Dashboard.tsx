@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { BrandProfile, HistoryEntry } from "@/lib/types";
 import { loadProfile } from "@/lib/profile/store";
 import { listHistory, statsFrom, type HistoryStats } from "@/lib/history/store";
+import LogoutButton from "@/components/LogoutButton";
 
 const TOOLS = [
   {
@@ -83,11 +84,14 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">{greeting}</h1>
-        <p className="text-gray-600">
-          {profile?.headline || "Your personal LinkedIn operating system."}
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">{greeting}</h1>
+          <p className="text-gray-600">
+            {profile?.headline || "Your personal LinkedIn operating system."}
+          </p>
+        </div>
+        <LogoutButton />
       </div>
 
       {/* Stats */}
