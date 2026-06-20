@@ -1,4 +1,4 @@
-import Link from "next/link";
+import LandingCtas from "@/components/LandingCtas";
 
 export default function Home() {
   return (
@@ -14,46 +14,9 @@ export default function Home() {
         chosen tone, reach-tiered hashtags, and a matching visual prompt — in
         under a minute.
       </p>
-      <div className="mt-8 flex flex-wrap justify-center gap-4">
-        <Link
-          href="/dashboard"
-          className="rounded-lg bg-linkedin px-6 py-3 font-semibold text-white shadow-sm transition hover:bg-linkedin-dark"
-        >
-          Open dashboard →
-        </Link>
-        <Link
-          href="/post-generator"
-          className="rounded-lg border border-gray-300 bg-white px-6 py-3 font-semibold text-gray-700 shadow-sm transition hover:border-linkedin hover:text-linkedin"
-        >
-          Generate a post
-        </Link>
-        <Link
-          href="/topic-discovery"
-          className="rounded-lg border border-gray-300 bg-white px-6 py-3 font-semibold text-gray-700 shadow-sm transition hover:border-linkedin hover:text-linkedin"
-        >
-          Discover topics
-        </Link>
-        <Link
-          href="/brand-profile"
-          className="rounded-lg border border-gray-300 bg-white px-6 py-3 font-semibold text-gray-700 shadow-sm transition hover:border-linkedin hover:text-linkedin"
-        >
-          Brand profile
-        </Link>
-        <Link
-          href="/brand-memory"
-          className="rounded-lg border border-gray-300 bg-white px-6 py-3 font-semibold text-gray-700 shadow-sm transition hover:border-linkedin hover:text-linkedin"
-        >
-          Brand memory
-        </Link>
-        <Link
-          href="/content-calendar"
-          className="rounded-lg border border-gray-300 bg-white px-6 py-3 font-semibold text-gray-700 shadow-sm transition hover:border-linkedin hover:text-linkedin"
-        >
-          Content calendar
-        </Link>
-      </div>
+      <LandingCtas />
       <p className="mt-10 text-sm text-gray-400">
-        Phase 1 MVP · Powered by Gemini 2.5 Flash
+        Powered by Gemini · No card required to try it
       </p>
     </main>
   );
