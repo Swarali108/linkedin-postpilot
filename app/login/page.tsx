@@ -8,5 +8,11 @@ export default async function LoginPage({
   searchParams: Promise<{ next?: string }>;
 }) {
   const { next } = await searchParams;
-  return <AuthForm next={next || "/dashboard"} />;
+  return (
+    <main className="flex min-h-screen items-center justify-center px-6">
+      <div className="w-full max-w-sm">
+        <AuthForm next={next || "/dashboard"} />
+      </div>
+    </main>
+  );
 }

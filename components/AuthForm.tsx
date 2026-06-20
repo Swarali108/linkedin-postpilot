@@ -15,6 +15,7 @@ export default function AuthForm({ next }: { next: string }) {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -58,8 +59,7 @@ export default function AuthForm({ next }: { next: string }) {
     "w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm focus:border-linkedin focus:outline-none focus:ring-1 focus:ring-linkedin";
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-6">
-      <div className="w-full max-w-sm space-y-4 rounded-3xl border border-gray-200 bg-white p-8 shadow-soft">
+    <div className="w-full space-y-4 rounded-3xl border border-gray-200 bg-white p-8 shadow-soft">
         <div className="flex items-center gap-2">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-linkedin text-lg font-bold text-white">
             P
@@ -104,13 +104,23 @@ export default function AuthForm({ next }: { next: string }) {
             />
           )}
           {mode !== "forgot" && (
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
-              className={input}
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password"
+                className={`${input} pr-10`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((s) => !s)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? "🙈" : "👁"}
+              </button>
+            </div>
           )}
 
           <button
@@ -154,7 +164,6 @@ export default function AuthForm({ next }: { next: string }) {
         <p className="text-center text-[11px] text-gray-400">
           Guest mode works, but your data isn&apos;t saved after you close the app.
         </p>
-      </div>
-    </main>
+    </div>
   );
 }
