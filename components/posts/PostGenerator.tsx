@@ -18,6 +18,7 @@ import type { AgentStep } from "@/lib/agents/types";
 import { hasUsefulProfile, loadProfile } from "@/lib/profile/store";
 import { addHistory, setHistoryScore } from "@/lib/history/store";
 import VisualImage from "./VisualImage";
+import Typewriter from "./Typewriter";
 
 type GenerationResult = GeneratedPost & {
   memoryUsed?: MemoryHit[];
@@ -376,42 +377,30 @@ export default function PostGenerator() {
 
         {result && (
           <>
-            {/* Agent pipeline trace */}
-            {result.trace && result.trace.length > 0 && (
-              <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
-                  Agent pipeline
+            {/* Post body (streams in) */}
+            <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+                  Post
                 </h2>
-                <ol className="space-y-1.5">
-                  {result.trace.map((step) => (
-                    <li key={step.name} className="flex items-center gap-3 text-sm">
-                      <span
-                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs ${
-                          step.status === "ok"
-                            ? "bg-green-100 text-green-700"
-                            : step.status === "skipped"
-                            ? "bg-gray-100 text-gray-400"
-                            : "bg-red-100 text-red-700"
-                        }`}
-                      >
-                        {step.status === "ok" ? "✓" : step.status === "skipped" ? "–" : "!"}
-                      </span>
-                      <span className="w-20 shrink-0 font-medium capitalize text-gray-700">
-                        {step.name}
-                      </span>
-                      <span className="flex-1 truncate text-gray-500">
-                        {step.summary}
-                      </span>
-                      {step.durationMs > 0 && (
-                        <span className="shrink-0 text-xs text-gray-400">
-                          {(step.durationMs / 1000).toFixed(1)}s
-                        </span>
-                      )}
-                    </li>
-                  ))}
-                </ol>
-              </section>
-            )}
+                <button
+                  onClick={copyAll}
+                  className="rounded-lg bg-linkedin px-3 py-1.5 text-xs font-medium text-white hover:bg-linkedin-dark"
+                >
+                  {copied ? "Copied!" : "Copy post + hashtags"}
+                </button>
+              </div>
+              {rewriting ? (
+                <p className="animate-pulse text-[15px] text-gray-400">
+                  Rewriting the post around your hook…
+                </p>
+              ) : (
+                <Typewriter
+                  text={result.body}
+                  className="whitespace-pre-wrap text-[15px] leading-relaxed text-gray-800"
+                />
+              )}
+            </section>
 
             {/* Hooks */}
             <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
@@ -459,31 +448,69 @@ export default function PostGenerator() {
               </section>
             )}
 
-            {/* Post body */}
+            {/* Hashtags */}
             <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-              <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
-                  Post
-                </h2>
-                <button
-                  onClick={copyAll}
-                  className="rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-700"
-                >
-                  {copied ? "Copied!" : "Copy post + hashtags"}
-                </button>
-              </div>
-              {rewriting ? (
-                <p className="animate-pulse text-[15px] text-gray-400">
-                  Rewriting the post around your hook…
-                </p>
-              ) : (
-                <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-gray-800">
-                  {result.body}
-                </p>
-              )}
+              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
+                Hashtags
+              </h2>
+              {(["broad", "medium", "niche"] as const).map((tier) => (
+                <div key={tier} className="mb-2">
+                  <span className="mr-2 inline-block w-16 text-xs font-medium capitalize text-gray-400">
+                    {tier}
+                  </span>
+                  {result.hashtags[tier].map((tag) => (
+                    <span
+                      key={tag}
+                      className="mr-1.5 inline-block rounded-full bg-linkedin/10 px-2.5 py-0.5 text-sm text-linkedin"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              ))}
             </section>
 
-            {/* Reach score */}
+            {/* Visual (designed image card) */}
+            <VisualImage visual={result.visual} />
+
+            {/* Agent pipeline trace (moved to the end) */}
+            {result.trace && result.trace.length > 0 && (
+              <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
+                  Agent pipeline
+                </h2>
+                <ol className="space-y-1.5">
+                  {result.trace.map((step) => (
+                    <li key={step.name} className="flex items-center gap-3 text-sm">
+                      <span
+                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs ${
+                          step.status === "ok"
+                            ? "bg-green-100 text-green-700"
+                            : step.status === "skipped"
+                            ? "bg-gray-100 text-gray-400"
+                            : "bg-red-100 text-red-700"
+                        }`}
+                      >
+                        {step.status === "ok" ? "✓" : step.status === "skipped" ? "–" : "!"}
+                      </span>
+                      <span className="w-20 shrink-0 font-medium capitalize text-gray-700">
+                        {step.name}
+                      </span>
+                      <span className="flex-1 truncate text-gray-500">
+                        {step.summary}
+                      </span>
+                      {step.durationMs > 0 && (
+                        <span className="shrink-0 text-xs text-gray-400">
+                          {(step.durationMs / 1000).toFixed(1)}s
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            )}
+
+            {/* Reach score (moved to the end) */}
             <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
@@ -548,31 +575,6 @@ export default function PostGenerator() {
                 </>
               )}
             </section>
-
-            {/* Hashtags */}
-            <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
-                Hashtags
-              </h2>
-              {(["broad", "medium", "niche"] as const).map((tier) => (
-                <div key={tier} className="mb-2">
-                  <span className="mr-2 inline-block w-16 text-xs font-medium capitalize text-gray-400">
-                    {tier}
-                  </span>
-                  {result.hashtags[tier].map((tag) => (
-                    <span
-                      key={tag}
-                      className="mr-1.5 inline-block rounded-full bg-linkedin/10 px-2.5 py-0.5 text-sm text-linkedin"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              ))}
-            </section>
-
-            {/* Visual (image generated from the prompt) */}
-            <VisualImage visual={result.visual} />
           </>
         )}
       </div>

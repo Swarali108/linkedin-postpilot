@@ -3,11 +3,29 @@
 @tailwind utilities;
 
 :root {
-  --background: #f3f4f6;
-  --foreground: #111827;
+  --foreground: #1e293b;
 }
 
 body {
-  background: var(--background);
+  /* Soft blue-grey → white wash for a calm, "pinteresty" feel. */
+  background: linear-gradient(180deg, #f6f9fe 0%, #eef2f9 60%, #f6f9fe 100%);
+  background-attachment: fixed;
   color: var(--foreground);
+  min-height: 100vh;
+}
+
+/* Gentle, rounded scrollbar to match the soft aesthetic. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #c7d2e4 transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #c7d2e4;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
