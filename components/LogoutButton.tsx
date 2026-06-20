@@ -1,13 +1,14 @@
 "use client";
 
-export default function LogoutButton({
-  className = "",
-}: {
-  className?: string;
-}) {
+import { signOut } from "@/lib/auth-client";
+
+export default function LogoutButton({ className = "" }: { className?: string }) {
   async function logout() {
-    await fetch("/api/auth?action=logout", { method: "POST" });
-    window.location.href = "/login";
+    try {
+      await signOut();
+    } finally {
+      window.location.href = "/login";
+    }
   }
   return (
     <button

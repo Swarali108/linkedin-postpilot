@@ -6,29 +6,34 @@ import {
   listMemories,
 } from "@/lib/memory/store";
 import { describeAiError } from "@/lib/ai/gemini";
+import { currentUserId } from "@/lib/user-context";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
-// GET /api/memory?userId=local — list stored memories
-export async function GET(req: NextRequest) {
-  const userId = req.nextUrl.searchParams.get("userId") || "local";
+const UNAUTH = NextResponse.json(
+  { error: "Log in to use brand memory." },
+  { status: 401 }
+);
+
+// GET /api/memory — list the signed-in user's stored memories
+export async function GET() {
+  const userId = await currentUserId();
+  if (!userId) return UNAUTH;
   try {
     const memories = await listMemories(userId);
     return NextResponse.json({ memories });
-  } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to list memories." },
-      { status: 500 }
-    );
+  } catch {
+    return NextResponse.json({ error: "Request failed." }, { status: 500 });
   }
 }
 
-// POST /api/memory — add a past post: { text, userId? }
+// POST /api/memory — add a past post (scoped to the signed-in user)
 export async function POST(req: NextRequest) {
+  const userId = await currentUserId();
+  if (!userId) return UNAUTH;
   let body: {
     text?: string;
-    userId?: string;
     hashtags?: string;
     likes?: number;
     impressions?: number;
@@ -48,7 +53,7 @@ export async function POST(req: NextRequest) {
   try {
     const toNum = (v: unknown) =>
       typeof v === "number" && Number.isFinite(v) ? v : undefined;
-    const record = await addMemory(body.text, "past-post", body.userId || "local", {
+    const record = await addMemory(body.text, "past-post", userId, {
       hashtags: body.hashtags?.trim() || undefined,
       likes: toNum(body.likes),
       impressions: toNum(body.impressions),
@@ -73,11 +78,12 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// DELETE /api/memory?id=xyz  or  /api/memory?userId=local&all=true
+// DELETE /api/memory?id=xyz  or  /api/memory?all=true
 export async function DELETE(req: NextRequest) {
+  const userId = await currentUserId();
+  if (!userId) return UNAUTH;
   const id = req.nextUrl.searchParams.get("id");
   const all = req.nextUrl.searchParams.get("all");
-  const userId = req.nextUrl.searchParams.get("userId") || "local";
   try {
     if (all === "true") {
       await clearMemories(userId);
@@ -90,10 +96,7 @@ export async function DELETE(req: NextRequest) {
       );
     }
     return NextResponse.json({ ok: true });
-  } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to delete." },
-      { status: 500 }
-    );
+  } catch {
+    return NextResponse.json({ error: "Request failed." }, { status: 500 });
   }
 }

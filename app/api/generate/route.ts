@@ -3,6 +3,7 @@ import { addMemory } from "@/lib/memory/store";
 import { runPipeline } from "@/lib/agents/orchestrator";
 import { CONTENT_PIPELINE } from "@/lib/agents/nodes";
 import { describeAiError } from "@/lib/ai/gemini";
+import { currentUserId } from "@/lib/user-context";
 import type { AgentState, AgentStep } from "@/lib/agents/types";
 import type { GenerationInput } from "@/lib/types";
 
@@ -38,12 +39,15 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const userId = input.userId || "local";
+  // Partition key comes from the session, never the client. Guests (no session)
+  // can generate but get no persistent memory (retrieval/save are off).
+  const userId = await currentUserId();
+  const memoryEnabled = Boolean(userId);
 
   const initialState: AgentState = {
     input,
-    userId,
-    useMemory: Boolean(input.useMemory),
+    userId: userId ?? "guest",
+    useMemory: memoryEnabled && Boolean(input.useMemory),
   };
 
   try {
@@ -51,7 +55,7 @@ export async function POST(req: NextRequest) {
     const { state, trace } = await runPipeline(CONTENT_PIPELINE, initialState);
 
     // Optionally remember this post so future generations learn the user's voice.
-    if (input.saveToMemory && state.body) {
+    if (memoryEnabled && userId && input.saveToMemory && state.body) {
       try {
         await addMemory(state.body, "generated", userId);
       } catch {

@@ -1,70 +1,46 @@
 import type { HistoryEntry, PostType } from "../types";
+import { getStorageMode } from "../storage-mode";
 
 /**
  * Generation history (Phase 7).
- *
- * Two backends behind one async interface:
- *   • Supabase (generation_history) via /api/history — used when the server
- *     reports Supabase is configured.
- *   • localStorage — the zero-setup fallback (per browser).
- *
- * The server's configured-flag is probed once and cached, so localStorage mode
- * doesn't pay a round-trip per call after the first.
+ *   - Logged-in users → server (Supabase, scoped to their account).
+ *   - Guests → sessionStorage (session-only).
  */
 
 const STORAGE_KEY = "postpilot.history";
 const MAX_ENTRIES = 100;
 
-// --- localStorage backend ---
-
-function readLocal(): HistoryEntry[] {
+function readGuest(): HistoryEntry[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.sessionStorage.getItem(STORAGE_KEY);
     return raw ? (JSON.parse(raw) as HistoryEntry[]) : [];
   } catch {
     return [];
   }
 }
 
-function writeLocal(entries: HistoryEntry[]): void {
+function writeGuest(entries: HistoryEntry[]): void {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(entries.slice(0, MAX_ENTRIES)));
+  window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(entries.slice(0, MAX_ENTRIES)));
 }
 
 function makeId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-// --- server backend detection (cached) ---
-
-let serverMode: boolean | null = null;
-
-async function useServer(): Promise<boolean> {
-  if (serverMode !== null) return serverMode;
-  try {
-    const res = await fetch("/api/history");
-    const data = await res.json();
-    serverMode = Boolean(data.configured);
-  } catch {
-    serverMode = false;
-  }
-  return serverMode;
-}
-
-// --- public async API ---
-
 export async function listHistory(): Promise<HistoryEntry[]> {
-  if (await useServer()) {
+  if ((await getStorageMode()) === "user") {
     try {
       const res = await fetch("/api/history");
       const data = await res.json();
-      if (data.configured) return data.entries as HistoryEntry[];
+      if (res.ok && data.entries) return data.entries as HistoryEntry[];
     } catch {
-      /* fall through to local */
+      /* fall through */
     }
+    return [];
   }
-  return readLocal();
+  return readGuest();
 }
 
 export async function addHistory(entry: {
@@ -72,7 +48,7 @@ export async function addHistory(entry: {
   postType: PostType;
   body: string;
 }): Promise<string> {
-  if (await useServer()) {
+  if ((await getStorageMode()) === "user") {
     try {
       const res = await fetch("/api/history", {
         method: "POST",
@@ -80,21 +56,21 @@ export async function addHistory(entry: {
         body: JSON.stringify(entry),
       });
       const data = await res.json();
-      if (data.configured && data.entry) return (data.entry as HistoryEntry).id;
+      if (res.ok && data.entry) return (data.entry as HistoryEntry).id;
     } catch {
-      /* fall through to local */
+      /* fall through */
     }
   }
   const id = makeId();
-  writeLocal([
+  writeGuest([
     { id, ...entry, createdAt: new Date().toISOString() },
-    ...readLocal().filter((e) => e.id !== id),
+    ...readGuest().filter((e) => e.id !== id),
   ]);
   return id;
 }
 
 export async function setHistoryScore(id: string, score: number): Promise<void> {
-  if (await useServer()) {
+  if ((await getStorageMode()) === "user") {
     try {
       await fetch("/api/history", {
         method: "PATCH",
@@ -103,34 +79,34 @@ export async function setHistoryScore(id: string, score: number): Promise<void> 
       });
       return;
     } catch {
-      /* fall through to local */
+      /* fall through */
     }
   }
-  writeLocal(readLocal().map((e) => (e.id === id ? { ...e, score } : e)));
+  writeGuest(readGuest().map((e) => (e.id === id ? { ...e, score } : e)));
 }
 
 export async function deleteHistory(id: string): Promise<void> {
-  if (await useServer()) {
+  if ((await getStorageMode()) === "user") {
     try {
       await fetch(`/api/history?id=${encodeURIComponent(id)}`, { method: "DELETE" });
       return;
     } catch {
-      /* fall through to local */
+      /* fall through */
     }
   }
-  writeLocal(readLocal().filter((e) => e.id !== id));
+  writeGuest(readGuest().filter((e) => e.id !== id));
 }
 
 export async function clearHistory(): Promise<void> {
-  if (await useServer()) {
+  if ((await getStorageMode()) === "user") {
     try {
       await fetch("/api/history?all=true", { method: "DELETE" });
       return;
     } catch {
-      /* fall through to local */
+      /* fall through */
     }
   }
-  writeLocal([]);
+  writeGuest([]);
 }
 
 export interface HistoryStats {
@@ -140,7 +116,6 @@ export interface HistoryStats {
   bestScore: number | null;
 }
 
-/** Compute analytics from a list of entries (pure — callers pass in listHistory()). */
 export function statsFrom(entries: HistoryEntry[]): HistoryStats {
   const scores = entries
     .map((e) => e.score)

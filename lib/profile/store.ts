@@ -1,14 +1,11 @@
 import type { BrandProfile, Tone } from "../types";
+import { getStorageMode } from "../storage-mode";
 
 /**
  * Brand profile persistence (Phase 2).
  *
- * Two backends behind one async interface:
- *   • Supabase (brand_profiles) via /api/profile — used when the server reports
- *     Supabase is configured.
- *   • localStorage — the zero-setup fallback (per browser).
- *
- * The server's configured-flag is probed once and cached.
+ *   - Logged-in users → server (Supabase, scoped to their account).
+ *   - Guests → sessionStorage (session-only; cleared when the tab closes).
  */
 
 const STORAGE_KEY = "postpilot.brandProfile";
@@ -23,67 +20,34 @@ export const EMPTY_PROFILE: BrandProfile = {
   voiceNotes: "",
 };
 
-// --- localStorage backend ---
-
-function loadLocal(): BrandProfile | null {
+function loadGuest(): BrandProfile | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    return { ...EMPTY_PROFILE, ...(JSON.parse(raw) as Partial<BrandProfile>) };
+    const raw = window.sessionStorage.getItem(STORAGE_KEY);
+    return raw ? { ...EMPTY_PROFILE, ...(JSON.parse(raw) as Partial<BrandProfile>) } : null;
   } catch {
     return null;
   }
 }
 
-function saveLocal(profile: BrandProfile): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
-}
-
-function clearLocal(): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.removeItem(STORAGE_KEY);
-}
-
-// --- server backend detection (cached) ---
-
-let serverMode: boolean | null = null;
-
-async function useServer(): Promise<boolean> {
-  if (serverMode !== null) return serverMode;
-  try {
-    const res = await fetch("/api/profile");
-    const data = await res.json();
-    serverMode = Boolean(data.configured);
-    return serverMode;
-  } catch {
-    serverMode = false;
-    return false;
-  }
-}
-
-// --- public async API ---
-
 export async function loadProfile(): Promise<BrandProfile | null> {
-  try {
-    const res = await fetch("/api/profile");
-    const data = await res.json();
-    if (data.configured) {
-      serverMode = true;
-      return data.profile
-        ? { ...EMPTY_PROFILE, ...(data.profile as Partial<BrandProfile>) }
-        : null;
+  if ((await getStorageMode()) === "user") {
+    try {
+      const res = await fetch("/api/profile");
+      const data = await res.json();
+      if (res.ok && data.profile) {
+        return { ...EMPTY_PROFILE, ...(data.profile as Partial<BrandProfile>) };
+      }
+      if (res.ok) return null;
+    } catch {
+      /* fall through */
     }
-    serverMode = false;
-  } catch {
-    /* fall through to local */
   }
-  return loadLocal();
+  return loadGuest();
 }
 
 export async function saveProfile(profile: BrandProfile): Promise<void> {
-  if (await useServer()) {
+  if ((await getStorageMode()) === "user") {
     try {
       await fetch("/api/profile", {
         method: "PUT",
@@ -92,22 +56,24 @@ export async function saveProfile(profile: BrandProfile): Promise<void> {
       });
       return;
     } catch {
-      /* fall through to local */
+      /* fall through */
     }
   }
-  saveLocal(profile);
+  if (typeof window !== "undefined") {
+    window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+  }
 }
 
 export async function clearProfile(): Promise<void> {
-  if (await useServer()) {
+  if ((await getStorageMode()) === "user") {
     try {
       await fetch("/api/profile", { method: "DELETE" });
       return;
     } catch {
-      /* fall through to local */
+      /* fall through */
     }
   }
-  clearLocal();
+  if (typeof window !== "undefined") window.sessionStorage.removeItem(STORAGE_KEY);
 }
 
 /** True if the profile has enough filled in to meaningfully personalize output. */

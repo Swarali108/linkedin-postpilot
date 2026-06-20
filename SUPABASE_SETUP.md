@@ -1,7 +1,44 @@
-# Supabase Setup (optional)
+# Supabase Setup
 
-PostPilot runs with **zero backend** by default — brand memory lives in a local
-JSON file (`data/memory.json`) and profile/history live in your browser.
+## Authentication (required for the deployed app)
+
+The app uses **Supabase Auth** (username + password, with email password-reset).
+In production the site is **fail-closed** — without the Supabase env vars it stays
+locked. To set it up:
+
+1. **Enable email auth:** Supabase → **Authentication → Providers → Email** → enable.
+   For quick testing you can turn **"Confirm email" OFF** so signup logs in
+   immediately; leave it on for stricter security (users confirm via email first).
+2. **Run the auth schema:** paste [`supabase/schema/auth.sql`](supabase/schema/auth.sql)
+   into the SQL editor and run it (creates the `profiles` table, signup trigger,
+   and the `email_for_username` / `username_taken` functions).
+3. **Set redirect URLs:** Supabase → **Authentication → URL Configuration** → set
+   **Site URL** to your domain and add `<domain>/reset` and `<domain>/login` to
+   **Redirect URLs** (so reset/confirm email links work). Add `http://localhost:3000/*`
+   for local dev.
+4. **Add the public env vars** (Settings → API → URL + anon/publishable key) to
+   `.env.local` and Vercel:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_...   # anon/publishable, NOT the secret
+   ```
+   These are public (browser-safe). The `SUPABASE_SERVICE_ROLE_KEY` stays server-only.
+   You can remove the old `APP_PASSWORD` var — it's no longer used.
+5. **Password-reset email:** Supabase's built-in email works for low-volume testing.
+   For production, configure custom SMTP (Authentication → Emails) to avoid rate limits.
+
+### Test checklist (after setup)
+- Sign up (username + email + password) → confirm via email if enabled → log in.
+- Log in by **username** + password.
+- "Forgot password" → email link → `/reset` → set new password → log in.
+- Brand profile / memory / history persist and are **separate per account**.
+- "Use without an account" (guest) → works, but data clears when the tab closes;
+  brand memory prompts you to log in.
+
+---
+
+PostPilot can also run with **no Supabase** in local dev — brand memory falls back
+to a local JSON file (`data/memory.json`) and profile/history to browser storage.
 
 Enabling Supabase moves **brand memory into Postgres + pgvector**, which is
 required for the vector store to persist on serverless hosts like Vercel (their

@@ -1,4 +1,4 @@
-import LoginForm from "@/components/LoginForm";
+import AuthForm from "@/components/AuthForm";
 
 export const metadata = { title: "Sign in · PostPilot" };
 
@@ -8,5 +8,5 @@ export default async function LoginPage({
   searchParams: Promise<{ next?: string }>;
 }) {
   const { next } = await searchParams;
-  return <LoginForm next={next || "/"} />;
+  return <AuthForm next={next || "/dashboard"} />;
 }

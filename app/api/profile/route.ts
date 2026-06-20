@@ -1,66 +1,58 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isSupabaseConfigured } from "@/lib/supabase/client";
 import * as store from "@/lib/profile/supabase-store";
+import { currentUserId } from "@/lib/user-context";
 import type { BrandProfile } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
 /**
- * Server-backed brand profile (Supabase). Returns { configured: false } when
- * Supabase isn't set up so the client store falls back to localStorage.
+ * Server-backed brand profile. The partition key is the AUTHENTICATED user's id
+ * (from the session) — never client input. Guests (no session) get 401 and use
+ * client-side session storage instead.
  */
+const UNAUTH = NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+const fail = () =>
+  NextResponse.json({ error: "Request failed." }, { status: 500 });
 
-function notConfigured() {
-  return NextResponse.json({ configured: false });
-}
-
-export async function GET(req: NextRequest) {
-  if (!isSupabaseConfigured()) return notConfigured();
-  const userId = req.nextUrl.searchParams.get("userId") || "local";
+export async function GET() {
+  const userId = await currentUserId();
+  if (!userId) return UNAUTH;
   try {
     const profile = await store.loadProfile(userId);
-    return NextResponse.json({ configured: true, profile });
-  } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to load profile." },
-      { status: 500 }
-    );
+    return NextResponse.json({ profile });
+  } catch {
+    return fail();
   }
 }
 
 export async function PUT(req: NextRequest) {
-  if (!isSupabaseConfigured()) return notConfigured();
-  let body: { profile?: BrandProfile; userId?: string };
+  const userId = await currentUserId();
+  if (!userId) return UNAUTH;
+  let body: { profile?: BrandProfile };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
   if (!body.profile) {
-    return NextResponse.json({ error: "Missing required field: profile." }, { status: 400 });
+    return NextResponse.json({ error: "Missing field: profile." }, { status: 400 });
   }
   try {
-    await store.saveProfile(body.profile, body.userId || "local");
-    return NextResponse.json({ configured: true, ok: true });
-  } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to save profile." },
-      { status: 500 }
-    );
+    await store.saveProfile(body.profile, userId);
+    return NextResponse.json({ ok: true });
+  } catch {
+    return fail();
   }
 }
 
-export async function DELETE(req: NextRequest) {
-  if (!isSupabaseConfigured()) return notConfigured();
-  const userId = req.nextUrl.searchParams.get("userId") || "local";
+export async function DELETE() {
+  const userId = await currentUserId();
+  if (!userId) return UNAUTH;
   try {
     await store.clearProfile(userId);
-    return NextResponse.json({ configured: true, ok: true });
-  } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to clear profile." },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: true });
+  } catch {
+    return fail();
   }
 }

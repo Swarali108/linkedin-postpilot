@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { generatePost } from "@/lib/ai/content-generator";
 import { retrieveContext } from "@/lib/rag/retrieve";
 import { describeAiError } from "@/lib/ai/gemini";
+import { currentUserId } from "@/lib/user-context";
 import type { GenerationInput, Hook } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -40,9 +41,10 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    const userId = await currentUserId();
     let memoryBlock = "";
-    if (body.useMemory) {
-      const ctx = await retrieveContext(body.topic, body.userId || "local");
+    if (userId && body.useMemory) {
+      const ctx = await retrieveContext(body.topic, userId);
       memoryBlock = ctx.block;
     }
     const post = await generatePost(body, body.hook, memoryBlock);
