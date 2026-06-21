@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
-import { setNewPassword, updateUsername } from "@/lib/auth-client";
+import { setNewPassword, signOut, updateUsername } from "@/lib/auth-client";
 
 export default function ResetForm() {
   const [checking, setChecking] = useState(true);
@@ -37,6 +37,8 @@ export default function ResetForm() {
     try {
       await setNewPassword(password);
       if (username.trim()) await updateUsername(username);
+      // End the recovery session so they log in fresh with the new credentials.
+      await signOut();
       setDone(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Reset failed.");
@@ -71,13 +73,14 @@ export default function ResetForm() {
         ) : done ? (
           <>
             <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-              Updated! Log in with your new details.
+              Updated! Your posts &amp; memory are intact — log in with your new
+              details.
             </p>
             <a
-              href="/login"
+              href="/"
               className="block rounded-xl bg-linkedin px-4 py-2.5 text-center font-semibold text-white hover:bg-linkedin-dark"
             >
-              Go to log in
+              Go to log in →
             </a>
           </>
         ) : (
