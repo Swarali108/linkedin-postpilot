@@ -67,7 +67,39 @@ export async function setNewPassword(password: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
-export function continueAsGuest(): void {
+/** Change the signed-in user's username (used on the reset page). */
+export async function updateUsername(username: string): Promise<void> {
+  const supabase = createBrowserSupabase();
+  const uname = username.trim().toLowerCase();
+  if (!/^[a-z0-9_.-]{3,30}$/.test(uname)) {
+    throw new Error("Username must be 3–30 chars (letters, numbers, _ . -).");
+  }
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not signed in.");
+  const { error } = await supabase
+    .from("profiles")
+    .update({ username: uname })
+    .eq("user_id", user.id);
+  if (error) {
+    if (error.code === "23505") throw new Error("That username is already taken.");
+    throw new Error(error.message);
+  }
+}
+
+/** Enter guest mode. Critically, sign out any existing session and clear local
+ * data first, so a guest can NEVER see a previously logged-in user's data. */
+export async function continueAsGuest(): Promise<void> {
+  try {
+    await createBrowserSupabase().auth.signOut();
+  } catch {
+    /* ignore */
+  }
+  if (typeof window !== "undefined") {
+    window.sessionStorage.removeItem("postpilot.brandProfile");
+    window.sessionStorage.removeItem("postpilot.history");
+  }
   document.cookie = `${GUEST_COOKIE}=1; path=/; max-age=${60 * 60 * 24}; samesite=lax`;
 }
 

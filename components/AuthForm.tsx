@@ -50,8 +50,8 @@ export default function AuthForm({ next }: { next: string }) {
     }
   }
 
-  function guest() {
-    continueAsGuest();
+  async function guest() {
+    await continueAsGuest();
     window.location.href = dest;
   }
 
