@@ -1,4 +1,4 @@
-import { generateText } from "./gemini";
+import { generateText, Models } from "./llm";
 import { brandProfileBlock } from "./personalization";
 import type { GenerationInput, Hook } from "../types";
 
@@ -48,7 +48,7 @@ Post-type guidance: ${POST_TYPE_GUIDANCE[input.postType]}
 
 Return ONLY the post text, ready to paste into LinkedIn.`;
 
-  const raw = await generateText(prompt, SYSTEM);
+  const raw = await generateText(prompt, SYSTEM, Models.writer);
   return stripMarkdown(raw);
 }
 

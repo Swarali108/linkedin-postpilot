@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generatePost } from "@/lib/ai/content-generator";
 import { retrieveContext } from "@/lib/rag/retrieve";
-import { describeAiError } from "@/lib/ai/gemini";
+import { describeAiError } from "@/lib/ai/llm";
 import { currentUserId } from "@/lib/user-context";
 import type { GenerationInput, Hook } from "@/lib/types";
 

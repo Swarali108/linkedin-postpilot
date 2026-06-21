@@ -1,36 +1,5 @@
-import { Type } from "@google/genai";
-import { generateJSON } from "./gemini";
+import { generateJSON, Models } from "./llm";
 import type { DimensionScore, PostEvaluation, ScoreDimension } from "../types";
-
-const SCHEMA = {
-  type: Type.OBJECT,
-  properties: {
-    dimensions: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          dimension: {
-            type: Type.STRING,
-            enum: [
-              "hook",
-              "readability",
-              "authority",
-              "virality",
-              "cta",
-              "formatting",
-            ],
-          },
-          score: { type: Type.NUMBER },
-          reason: { type: Type.STRING },
-        },
-        required: ["dimension", "score", "reason"],
-      },
-    },
-    suggestions: { type: Type.ARRAY, items: { type: Type.STRING } },
-  },
-  required: ["dimensions", "suggestions"],
-};
 
 const SYSTEM = `You are a brutally honest LinkedIn engagement analyst. You score posts
 on objective, measurable qualities. You are not a cheerleader — most posts are a 60-75.
@@ -79,7 +48,7 @@ Return a JSON object with exactly:
 
 Return ONLY the JSON object.`;
 
-  const raw = await generateJSON<RawEval>(prompt, SYSTEM, SCHEMA);
+  const raw = await generateJSON<RawEval>(prompt, SYSTEM, Models.scoring);
 
   // Normalize + compute the weighted overall score ourselves (don't trust the model's math).
   const dimensions = raw.dimensions.map((d) => ({

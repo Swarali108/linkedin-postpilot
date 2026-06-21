@@ -1,5 +1,4 @@
-import { Type } from "@google/genai";
-import { generateJSON } from "./gemini";
+import { generateJSON, Models } from "./llm";
 import { brandProfileBlock } from "./personalization";
 import type { BrandProfile, VisualCard } from "../types";
 
@@ -17,30 +16,6 @@ Guidelines:
 - Pick an accent hex color that fits the topic's vibe (professional blues/teals
   for technical, warm tones for story/humor, etc.). Choose theme "dark" usually
   (LinkedIn graphics pop on dark), "light" only if it clearly fits.`;
-
-const SCHEMA = {
-  type: Type.OBJECT,
-  properties: {
-    title: { type: Type.STRING },
-    subtitle: { type: Type.STRING },
-    layout: { type: Type.STRING, enum: ["list", "quote"] },
-    points: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          icon: { type: Type.STRING },
-          text: { type: Type.STRING },
-        },
-        required: ["icon", "text"],
-      },
-    },
-    quote: { type: Type.STRING },
-    accent: { type: Type.STRING },
-    theme: { type: Type.STRING, enum: ["dark", "light"] },
-  },
-  required: ["title", "layout", "accent", "theme"],
-};
 
 function normalizeAccent(accent: string): string {
   const hex = accent?.trim();
@@ -70,7 +45,7 @@ Return a JSON object with:
 
 Return ONLY the JSON object.`;
 
-  const card = await generateJSON<VisualCard>(prompt, SYSTEM, SCHEMA);
+  const card = await generateJSON<VisualCard>(prompt, SYSTEM, Models.visual);
   return {
     ...card,
     accent: normalizeAccent(card.accent),

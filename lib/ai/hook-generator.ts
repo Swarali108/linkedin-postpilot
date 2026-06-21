@@ -1,22 +1,6 @@
-import { Type } from "@google/genai";
-import { generateJSON } from "./gemini";
+import { generateJSON, Models } from "./llm";
 import { brandProfileBlock } from "./personalization";
 import type { Hook, GenerationInput } from "../types";
-
-const SCHEMA = {
-  type: Type.ARRAY,
-  items: {
-    type: Type.OBJECT,
-    properties: {
-      text: { type: Type.STRING },
-      style: {
-        type: Type.STRING,
-        enum: ["curiosity", "contrarian", "story", "educational"],
-      },
-    },
-    required: ["text", "style"],
-  },
-};
 
 const SYSTEM = `You are a world-class LinkedIn hook writer. The hook is the first 1-2
 lines — the ONLY thing that decides whether someone stops scrolling. Write hooks
@@ -51,5 +35,5 @@ Return a JSON array of objects with exactly these fields:
 
 Return ONLY the JSON array.`;
 
-  return generateJSON<Hook[]>(prompt, SYSTEM, SCHEMA);
+  return generateJSON<Hook[]>(prompt, SYSTEM, Models.hook);
 }

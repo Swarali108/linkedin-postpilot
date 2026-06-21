@@ -5,7 +5,7 @@ import {
   deleteMemory,
   listMemories,
 } from "@/lib/memory/store";
-import { describeAiError } from "@/lib/ai/gemini";
+import { describeAiError } from "@/lib/ai/llm";
 import { currentUserId } from "@/lib/user-context";
 
 export const runtime = "nodejs";

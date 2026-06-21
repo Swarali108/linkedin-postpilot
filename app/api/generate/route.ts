@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { addMemory } from "@/lib/memory/store";
 import { runPipeline } from "@/lib/agents/orchestrator";
 import { CONTENT_PIPELINE } from "@/lib/agents/nodes";
-import { describeAiError } from "@/lib/ai/gemini";
+import { describeAiError } from "@/lib/ai/llm";
 import { currentUserId } from "@/lib/user-context";
 import type { AgentState, AgentStep } from "@/lib/agents/types";
 import type { GenerationInput } from "@/lib/types";

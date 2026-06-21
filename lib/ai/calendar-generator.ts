@@ -1,5 +1,4 @@
-import { Type } from "@google/genai";
-import { generateJSON } from "./gemini";
+import { generateJSON, Models } from "./llm";
 import { brandProfileBlock } from "./personalization";
 import type {
   BrandProfile,
@@ -22,41 +21,6 @@ const WEEKDAY_ORDER: Weekday[] = [
   "Sat",
   "Sun",
 ];
-
-const SCHEMA = {
-  type: Type.OBJECT,
-  properties: {
-    pillars: { type: Type.ARRAY, items: { type: Type.STRING } },
-    posts: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          week: { type: Type.NUMBER },
-          weekday: {
-            type: Type.STRING,
-            enum: WEEKDAY_ORDER,
-          },
-          topic: { type: Type.STRING },
-          postType: {
-            type: Type.STRING,
-            enum: [
-              "educational",
-              "story",
-              "opinion",
-              "carousel",
-              "personal-insight",
-            ],
-          },
-          angle: { type: Type.STRING },
-          pillar: { type: Type.STRING },
-        },
-        required: ["week", "weekday", "topic", "postType", "angle", "pillar"],
-      },
-    },
-  },
-  required: ["pillars", "posts"],
-};
 
 export interface CalendarParams {
   industry: string;
@@ -113,7 +77,7 @@ Return a JSON object with:
 
 Return ONLY the JSON object.`;
 
-  const raw = await generateJSON<RawPlan>(prompt, SYSTEM, SCHEMA);
+  const raw = await generateJSON<RawPlan>(prompt, SYSTEM, Models.calendar);
 
   const posts: PlannedPost[] = (raw.posts ?? [])
     .map((p) => ({

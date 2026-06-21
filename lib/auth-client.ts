@@ -4,6 +4,16 @@ import { createBrowserSupabase } from "./supabase/browser";
 
 const GUEST_COOKIE = "pp_guest";
 
+/** Stable base URL for email links — uses NEXT_PUBLIC_SITE_URL if set, else the
+ * current origin. Set NEXT_PUBLIC_SITE_URL=https://<prod-domain> so reset/confirm
+ * links always point at production, regardless of which URL you're on. */
+function siteBase(): string {
+  const env = process.env.NEXT_PUBLIC_SITE_URL;
+  const base =
+    env || (typeof window !== "undefined" ? window.location.origin : "");
+  return base.replace(/\/$/, "");
+}
+
 export async function signUp(
   username: string,
   email: string,
@@ -22,8 +32,7 @@ export async function signUp(
     password,
     options: {
       data: { username: uname },
-      emailRedirectTo:
-        typeof window !== "undefined" ? `${window.location.origin}/login` : undefined,
+      emailRedirectTo: `${siteBase()}/login`,
     },
   });
   if (error) throw new Error(error.message);
@@ -55,8 +64,7 @@ export async function signOut(): Promise<void> {
 export async function forgotPassword(email: string): Promise<void> {
   const supabase = createBrowserSupabase();
   const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-    redirectTo:
-      typeof window !== "undefined" ? `${window.location.origin}/reset` : undefined,
+    redirectTo: `${siteBase()}/reset`,
   });
   if (error) throw new Error(error.message);
 }

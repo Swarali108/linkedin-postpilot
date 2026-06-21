@@ -1,22 +1,5 @@
-import { Type } from "@google/genai";
-import { generateJSON } from "./gemini";
+import { generateJSON, Models } from "./llm";
 import type { TopicSuggestion } from "../types";
-
-const SCHEMA = {
-  type: Type.ARRAY,
-  items: {
-    type: Type.OBJECT,
-    properties: {
-      title: { type: Type.STRING },
-      angle: { type: Type.STRING },
-      category: {
-        type: Type.STRING,
-        enum: ["trending", "personalized", "story", "learning"],
-      },
-    },
-    required: ["title", "angle", "category"],
-  },
-};
 
 const SYSTEM = `You are a LinkedIn content strategist. You generate sharp, specific,
 non-generic content topics that working professionals can post about to grow a
@@ -42,5 +25,5 @@ Return a JSON array of objects with exactly these fields:
 
 Return ONLY the JSON array.`;
 
-  return generateJSON<TopicSuggestion[]>(prompt, SYSTEM, SCHEMA);
+  return generateJSON<TopicSuggestion[]>(prompt, SYSTEM, Models.topic);
 }

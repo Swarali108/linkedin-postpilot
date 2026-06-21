@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { evaluatePost } from "@/lib/ai/evaluator";
-import { describeAiError } from "@/lib/ai/gemini";
+import { describeAiError } from "@/lib/ai/llm";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
