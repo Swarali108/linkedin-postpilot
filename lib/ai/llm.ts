@@ -32,6 +32,10 @@ export const Models = {
   calendar: process.env.MODEL_CALENDAR || CHEAP,
 } as const;
 
+// Image-generation model (Nano Banana Pro is excellent at designed, text-legible
+// infographics). Switch to google/gemini-2.5-flash-image for cheaper output.
+export const IMAGE_MODEL = process.env.MODEL_IMAGE || "google/gemini-3-pro-image";
+
 let client: OpenAI | null = null;
 
 function getClient(): OpenAI {
@@ -91,6 +95,54 @@ async function chat(
       }
       throw err;
     }
+  }
+  throw new Error("unreachable");
+}
+
+/**
+ * Generate an image via an OpenRouter image model. Returns a data: URL
+ * (base64 PNG). Uses raw fetch because OpenRouter's image output format
+ * (message.images[].image_url.url) isn't in the OpenAI SDK types.
+ */
+export async function generateImage(
+  prompt: string,
+  model: string = IMAGE_MODEL
+): Promise<string> {
+  if (!apiKey) {
+    throw new Error("OPENROUTER_API_KEY is missing.");
+  }
+  const maxAttempts = 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "X-Title": "LinkedIn PostPilot",
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: "user", content: prompt }],
+        modalities: ["image", "text"],
+      }),
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      const url: string | undefined =
+        json?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+      if (url) return url;
+      throw new Error("The image model returned no image.");
+    }
+
+    if (attempt < maxAttempts && (res.status === 429 || res.status >= 500)) {
+      await sleep(800 * 2 ** (attempt - 1));
+      continue;
+    }
+    const body = await res.text().catch(() => "");
+    const err = new Error(`Image generation failed (${res.status}): ${body.slice(0, 200)}`);
+    (err as Error & { status?: number }).status = res.status;
+    throw err;
   }
   throw new Error("unreachable");
 }
